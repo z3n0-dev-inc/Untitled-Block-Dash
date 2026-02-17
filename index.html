@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GeoBlast - Geometry Dash Replica</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23ff6b35'/><rect x='20' y='20' width='60' height='60' rx='10' fill='%23fff' opacity='0.9'/></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gd-orange: #ff6b35;
+    --gd-yellow: #ffd700;
+    --gd-blue: #00d4ff;
+    --gd-green: #39ff14;
+    --gd-purple: #bf5fff;
+    --gd-pink: #ff69b4;
+    --gd-red: #ff2222;
+    --gd-dark: #0a0a0f;
+    --gd-darker: #050508;
+    --gd-panel: #12121a;
+    --gd-border: rgba(255,107,53,0.4);
+    --gd-glow: 0 0 20px rgba(255,107,53,0.6);
+    --player-color: #ff6b35;
+    --player-trail: #ffd700;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--gd-darker);
+    font-family: 'Exo 2', sans-serif;
+    color: #fff;
+    overflow: hidden;
+    user-select: none;
+    cursor: crosshair;
+  }
+  /* SCREENS */
+  .screen { position: fixed; inset: 0; display: none; z-index: 10; }
+  .screen.active { display: flex; }
+
+  /* ═══════════════════ LOADING SCREEN ═══════════════════ */
+  #loadingScreen {
+    background: var(--gd-darker);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+  }
+  .loading-logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 4rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--gd-orange), var(--gd-yellow), var(--gd-orange));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+    animation: logoPulse 1.5s ease-in-out infinite;
+    margin-bottom: 2rem;
+  }
+  @keyframes logoPulse {
+    0%,100% { filter: drop-shadow(0 0 20px rgba(255,107,53,0.8)); }
+    50% { filter: drop-shadow(0 0 40px rgba(255,215,0,1)); }
+  }
+  .loading-bar-wrap {
+    width: 400px; max-width: 90vw;
+    height: 20px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    border: 2px solid var(--gd-orange);
+    overflow: hidden;
+  }
+  .loading-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gd-orange), var(--gd-yellow));
+    border-radius: 8px;
+    width: 0%;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 15px var(--gd-orange);
+  }
+  .loading-tip { margin-top: 1rem; color: rgba(255,255,255,0.6); font-size: 0.85rem; }
+
+  /* ═══════════════════ MAIN MENU ═══════════════════ */
+  #mainMenu {
+    background: radial-gradient(ellipse at center, #1a0a2e 0%, var(--gd-darker) 70%);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .menu-bg-stars {
+    position: absolute; inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.8) 0%, transparent 100%),
+      radial-gradient(1px 1px at 80% 10%, rgba(255,215,0,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 50% 80%, rgba(0,212,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 10% 70%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(2px 2px at 90% 60%, rgba(255,107,53,0.8) 0%, transparent 100%);
+    animation: twinkle 3s ease-in-out infinite;
+  }
+  @keyframes twinkle {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .menu-particles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .menu-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    font-weight: 900;
+    text-align: center;
+    background: linear-gradient(135deg, #ff6b35 0%, #ffd700 40%, #ff6b35 80%, #ff2222 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 30px rgba(255,107,53,0.9));
+    margin-bottom: 0.3rem;
+    animation: titleFloat 3s ease-in-out infinite;
+    position: relative; z-index: 2;
+  }
+  .menu-subtitle {
+    color: rgba(255,215,0,0.8);
+    font-size: 1.1rem;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 3rem;
+    position: relative; z-index: 2;
+  }
+  @keyframes titleFloat {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  .menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+    position: relative; z-index: 2;
+  }
+  .menu-btn {
+    width: 300px;
+    padding: 1rem 2rem;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .menu-btn-primary {
+    background: linear-gradient(135deg, var(--gd-orange), #ff4500);
+    color: #fff;
+    box-shadow: 0 0 20px rgba(255,107,53,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+  .menu-btn-primary:hover { transform: scale(1.05); box-shadow: 0 0 35px rgba(255,107,53,0.9), inset 0 1px 0 rgba(255,255,255,0.3); }
+  .menu-btn-secondary {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    color: var(--gd-blue);
+    border: 2px solid var(--gd-blue);
+    box-shadow: 0 0 15px rgba(0,212,255,0.3);
+  }
+  .menu-btn-secondary:hover { transform: scale(1.05); box-shadow: 0 0 25px rgba(0,212,255,0.7); background: rgba(0,212,255,0.1); }
+  .menu-btn-gold {
+    background: linear-gradient(135deg, #a07020, #ffd700, #a07020);
+    color: #1a0a00;
+    box-shadow: 0 0 20px rgba(255,215,0,0.5);
+  }
+  .menu-btn-gold:hover { transform: scale(1.05); box-shadow: 0 0 35px rgba(255,215,0,0.9); }
+  .menu-btn::before {
+    content: '';
+    position: absolute; top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.4s ease;
+  }
+  .menu-btn:hover::before { left: 100%; }
+  .menu-version { color: rgba(255,255,255,0.3); font-size: 0.7rem; margin-top: 2rem; letter-spacing: 2px; position: relative; z-index: 2; }
+
+  /* ═══════════════════ LEVEL SELECT ═══════════════════ */
+  #levelSelect {
+    background: radial-gradient(ellipse at top, #0a1628 0%, var(--gd-darker) 60%);
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+    overflow-y: auto;
+  }
+  .level-select-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--gd-yellow);
+    text-shadow: 0 0 20px rgba(255,215,0,0.7);
+    margin-bottom: 2rem;
+    letter-spacing: 3px;
+  }
+  .level-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.2rem;
+    width: 100%;
+    max-width: 1100px;
+  }
+  .level-card {
+    background: var(--gd-panel);
+    border-radius: 12px;
+    padding: 1.5rem;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.25s ease;
+    border: 2px solid transparent;
+  }
+  .level-card:hover:not(.locked) {
+    transform: translateY(-4px) scale(1.02);
+    border-color: var(--gd-orange);
+    box-shadow: 0 8px 30px rgba(255,107,53,0.4);
+  }
+  .level-card.locked { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.5); }
+  .level-card.completed { border-color: var(--gd-green); }
+  .level-card.completed::after {
+    content: '✓';
+    position: absolute; top: 10px; right: 14px;
+    font-size: 1.5rem; color: var(--gd-green);
+    text-shadow: 0 0 10px var(--gd-green);
+  }
+  .level-bg {
+    position: absolute; inset: 0;
+    opacity: 0.15;
+    background-size: cover;
+    border-radius: 10px;
+  }
+  .level-num {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 0.3rem;
+    opacity: 0.7;
+  }
+  .level-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 900;
+    margin-bottom: 0.5rem;
+  }
+  .level-difficulty {
+    display: inline-block;
+    padding: 0.2rem 0.7rem;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .diff-auto { background: rgba(150,150,150,0.3); color: #aaa; }
+  .diff-easy { background: rgba(57,255,20,0.2); color: var(--gd-green); border: 1px solid var(--gd-green); }
+  .diff-normal { background: rgba(0,212,255,0.2); color: var(--gd-blue); border: 1px solid var(--gd-blue); }
+  .diff-hard { background: rgba(255,107,53,0.2); color: var(--gd-orange); border: 1px solid var(--gd-orange); }
+  .diff-harder { background: rgba(255,30,30,0.2); color: var(--gd-red); border: 1px solid var(--gd-red); }
+  .diff-insane { background: rgba(191,95,255,0.2); color: var(--gd-purple); border: 1px solid var(--gd-purple); }
+  .diff-demon { background: linear-gradient(135deg, rgba(255,0,0,0.3), rgba(191,95,255,0.3)); color: #ff44ff; border: 1px solid #ff44ff; }
+  .diff-extreme { background: linear-gradient(135deg, rgba(255,0,0,0.5), rgba(0,0,0,0.5)); color: #ff0000; border: 1px solid #ff0000; box-shadow: 0 0 8px rgba(255,0,0,0.5); }
+  .level-stars { color: var(--gd-yellow); font-size: 0.85rem; margin-top: 0.4rem; }
+  .level-best { font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-top: 0.3rem; }
+  .level-lock-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; }
+  .back-btn {
+    margin-bottom: 1.5rem;
+    padding: 0.6rem 1.5rem;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 6px;
+    color: #fff;
+    cursor: pointer;
+    font-family: 'Exo 2', sans-serif;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    align-self: flex-start;
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.2); }
+
+  /* ═══════════════════ GAME SCREEN ═══════════════════ */
+  #gameScreen {
+    flex-direction: column;
+    background: #000;
+    position: relative;
+  }
+  #gameCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .game-hud {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    z-index: 5;
+    pointer-events: none;
+  }
+  .hud-left { display: flex; flex-direction: column; gap: 0.3rem; }
+  .hud-level-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(255,107,53,0.8), 2px 2px 0 rgba(0,0,0,0.8);
+  }
+  .hud-attempt {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.7);
+    letter-spacing: 1px;
+  }
+  .hud-right { text-align: right; }
+  .progress-wrap {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gd-orange), var(--gd-yellow));
+    transition: width 0.1s linear;
+    box-shadow: 0 0 8px var(--gd-orange);
+  }
+  .progress-pct {
+    position: absolute;
+    top: 8px; right: 1.5rem;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.9);
+    text-shadow: 1px 1px 0 #000;
+  }
+  .practice-badge {
+    position: absolute;
+    top: 50px; right: 1.5rem;
+    padding: 0.3rem 0.8rem;
+    background: rgba(57,255,20,0.2);
+    border: 1px solid var(--gd-green);
+    border-radius: 4px;
+    color: var(--gd-green);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    display: none;
+  }
+
+  /* ═══════════════════ OVERLAYS ═══════════════════ */
+  .game-overlay {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    backdrop-filter: blur(4px);
+  }
+  .game-overlay.show { display: flex; }
+  .overlay-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 3rem;
+    font-weight: 900;
+    margin-bottom: 0.5rem;
+    animation: overlayIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes overlayIn {
+    from { transform: scale(0.5) rotate(-5deg); opacity: 0; }
+    to { transform: scale(1) rotate(0); opacity: 1; }
+  }
+  .death-title { color: var(--gd-red); text-shadow: 0 0 30px rgba(255,34,34,0.9); }
+  .win-title { color: var(--gd-yellow); text-shadow: 0 0 30px rgba(255,215,0,0.9); }
+  .pause-title { color: var(--gd-blue); text-shadow: 0 0 20px rgba(0,212,255,0.8); }
+  .overlay-stats {
+    color: rgba(255,255,255,0.7);
+    font-size: 1rem;
+    margin-bottom: 2rem;
+    text-align: center;
+    line-height: 1.8;
+  }
+  .overlay-buttons { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+  .ov-btn {
+    padding: 0.8rem 1.8rem;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    letter-spacing: 1.5px;
+    transition: all 0.2s;
+  }
+  .ov-btn-restart { background: linear-gradient(135deg, var(--gd-orange), #ff4500); color: #fff; box-shadow: 0 0 15px rgba(255,107,53,0.5); }
+  .ov-btn-restart:hover { box-shadow: 0 0 25px rgba(255,107,53,0.9); transform: scale(1.05); }
+  .ov-btn-menu { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.3); }
+  .ov-btn-menu:hover { background: rgba(255,255,255,0.2); }
+  .ov-btn-practice { background: linear-gradient(135deg, #1a7a1a, var(--gd-green)); color: #000; }
+  .ov-btn-practice:hover { box-shadow: 0 0 20px rgba(57,255,20,0.7); transform: scale(1.05); }
+  .ov-btn-next { background: linear-gradient(135deg, var(--gd-yellow), #ffa500); color: #000; font-weight: 900; }
+  .ov-btn-next:hover { box-shadow: 0 0 20px rgba(255,215,0,0.9); transform: scale(1.05); }
+
+  /* ═══════════════════ COSMETICS SHOP ═══════════════════ */
+  #cosmeticsScreen {
+    background: radial-gradient(ellipse at center, #1a0a2e 0%, var(--gd-darker) 70%);
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem;
+    overflow-y: auto;
+  }
+  .cosmetics-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--gd-purple);
+    text-shadow: 0 0 20px rgba(191,95,255,0.7);
+    margin-bottom: 1.5rem;
+    letter-spacing: 3px;
+  }
+  .cosmetics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 900px;
+    margin-bottom: 1.5rem;
+  }
+  .cosmetics-panel {
+    background: var(--gd-panel);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid rgba(191,95,255,0.2);
+  }
+  .cosmetics-panel h3 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--gd-purple);
+    margin-bottom: 1rem;
+    border-bottom: 1px solid rgba(191,95,255,0.2);
+    padding-bottom: 0.5rem;
+  }
+  .color-options {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.5rem;
+  }
+  .color-swatch {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .color-swatch:hover { transform: scale(1.15); }
+  .color-swatch.selected { border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.6); }
+  .trail-options, .icon-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.6rem;
+  }
+  .trail-item, .icon-item {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 0.8rem 0.4rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.7rem;
+    position: relative;
+  }
+  .trail-item:hover, .icon-item:hover { background: rgba(191,95,255,0.1); border-color: var(--gd-purple); }
+  .trail-item.selected, .icon-item.selected { background: rgba(191,95,255,0.2); border-color: var(--gd-purple); box-shadow: 0 0 10px rgba(191,95,255,0.4); }
+  .trail-item.locked-item, .icon-item.locked-item { opacity: 0.4; cursor: not-allowed; }
+  .trail-item.locked-item::after, .icon-item.locked-item::after {
+    content: '🔒';
+    position: absolute; top: 2px; right: 4px;
+    font-size: 0.65rem;
+  }
+  .item-emoji { font-size: 1.5rem; display: block; margin-bottom: 0.3rem; }
+  .player-preview-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+  #playerPreviewCanvas {
+    border-radius: 8px;
+    border: 2px solid rgba(255,107,53,0.3);
+    background: rgba(0,0,0,0.5);
+  }
+  .currency-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gd-yellow);
+    text-shadow: 0 0 10px rgba(255,215,0,0.5);
+    margin-bottom: 1rem;
+  }
+
+  /* ═══════════════════ LEADERBOARD ═══════════════════ */
+  #leaderboardScreen {
+    background: radial-gradient(ellipse at top, #001428 0%, var(--gd-darker) 60%);
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+    overflow-y: auto;
+  }
+  .lb-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--gd-yellow);
+    text-shadow: 0 0 20px rgba(255,215,0,0.7);
+    margin-bottom: 1.5rem;
+    letter-spacing: 3px;
+  }
+  .lb-table {
+    width: 100%;
+    max-width: 700px;
+    border-collapse: collapse;
+  }
+  .lb-table th {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    color: rgba(255,255,255,0.5);
+    padding: 0.8rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .lb-table td { padding: 0.9rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .lb-table tr:hover td { background: rgba(255,255,255,0.03); }
+  .lb-rank { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 1.1rem; }
+  .lb-rank-1 { color: var(--gd-yellow); text-shadow: 0 0 10px rgba(255,215,0,0.8); }
+  .lb-rank-2 { color: #c0c0c0; }
+  .lb-rank-3 { color: #cd7f32; }
+  .lb-name { font-weight: 600; font-size: 1rem; }
+  .lb-tag {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-left: 0.4rem;
+  }
+  .tag-owner { background: linear-gradient(135deg, #ff0000, #8b0000); color: #ffd700; border: 1px solid #ffd700; }
+  .tag-admin { background: linear-gradient(135deg, #ff6b35, #ff4500); color: #fff; }
+  .tag-mod { background: rgba(0,212,255,0.2); color: var(--gd-blue); border: 1px solid var(--gd-blue); }
+  .tag-vip { background: rgba(255,215,0,0.2); color: var(--gd-yellow); border: 1px solid var(--gd-yellow); }
+  .lb-score { font-family: 'Orbitron', sans-serif; color: var(--gd-orange); font-weight: 700; }
+  .lb-stars { color: var(--gd-yellow); }
+
+  /* ═══════════════════ PROFILE / STATS ═══════════════════ */
+  #profileScreen {
+    background: radial-gradient(ellipse at center, #100a1e 0%, var(--gd-darker) 70%);
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+    overflow-y: auto;
+  }
+  .profile-card {
+    background: var(--gd-panel);
+    border-radius: 16px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 700px;
+    border: 1px solid rgba(255,107,53,0.2);
+    box-shadow: 0 0 40px rgba(255,107,53,0.1);
+  }
+  .profile-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+  .profile-avatar {
+    width: 80px; height: 80px;
+    border-radius: 12px;
+    border: 3px solid var(--gd-orange);
+    box-shadow: 0 0 20px rgba(255,107,53,0.5);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.5rem;
+    background: rgba(0,0,0,0.5);
+  }
+  .profile-info h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 900;
+    margin-bottom: 0.3rem;
+  }
+  .profile-tag-display {
+    display: flex; gap: 0.4rem; flex-wrap: wrap;
+    margin-bottom: 0.4rem;
+  }
+  .profile-join { color: rgba(255,255,255,0.4); font-size: 0.8rem; }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .stat-card {
+    background: rgba(255,255,255,0.03);
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.07);
+  }
+  .stat-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--gd-orange);
+  }
+  .stat-label { font-size: 0.72rem; color: rgba(255,255,255,0.5); letter-spacing: 1px; margin-top: 0.2rem; }
+
+  /* ═══════════════════ OWNER DASHBOARD ═══════════════════ */
+  #ownerScreen {
+    background: radial-gradient(ellipse at top left, #1a0000 0%, #0a0000 40%, var(--gd-darker) 100%);
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem;
+    overflow-y: auto;
+  }
+  .owner-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #ff0000, #ffd700, #ff0000);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 15px rgba(255,0,0,0.8));
+    margin-bottom: 0.3rem;
+    letter-spacing: 3px;
+  }
+  .owner-subtitle { color: rgba(255,100,100,0.7); font-size: 0.8rem; letter-spacing: 2px; margin-bottom: 2rem; }
+  .owner-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+    width: 100%; max-width: 1000px;
+  }
+  .owner-panel {
+    background: rgba(80,0,0,0.2);
+    border: 1px solid rgba(255,0,0,0.3);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+  .owner-panel h3 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #ff6666;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid rgba(255,0,0,0.2);
+    padding-bottom: 0.5rem;
+  }
+  .owner-stat {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    font-size: 0.85rem;
+  }
+  .owner-stat span:last-child { font-weight: 700; color: var(--gd-yellow); }
+  .owner-input {
+    width: 100%; padding: 0.6rem 0.8rem;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,0,0,0.3);
+    border-radius: 6px;
+    color: #fff;
+    font-family: 'Exo 2', sans-serif;
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+    outline: none;
+  }
+  .owner-input:focus { border-color: rgba(255,0,0,0.7); box-shadow: 0 0 10px rgba(255,0,0,0.3); }
+  .owner-input::placeholder { color: rgba(255,255,255,0.3); }
+  .owner-btn {
+    padding: 0.5rem 1rem;
+    border: none; border-radius: 6px;
+    cursor: pointer;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    width: 100%;
+    margin-bottom: 0.4rem;
+  }
+  .owner-btn-red { background: linear-gradient(135deg, #8b0000, var(--gd-red)); color: #ffd700; }
+  .owner-btn-red:hover { box-shadow: 0 0 15px rgba(255,0,0,0.7); transform: scale(1.02); }
+  .owner-btn-gold { background: linear-gradient(135deg, #a07020, var(--gd-yellow)); color: #000; }
+  .owner-btn-gold:hover { box-shadow: 0 0 15px rgba(255,215,0,0.7); transform: scale(1.02); }
+  .owner-btn-blue { background: linear-gradient(135deg, #003060, var(--gd-blue)); color: #fff; }
+  .owner-btn-blue:hover { box-shadow: 0 0 15px rgba(0,212,255,0.5); transform: scale(1.02); }
+  .owner-btn-purple { background: linear-gradient(135deg, #300060, var(--gd-purple)); color: #fff; }
+  .owner-btn-purple:hover { box-shadow: 0 0 15px rgba(191,95,255,0.7); transform: scale(1.02); }
+  .owner-log {
+    background: rgba(0,0,0,0.5);
+    border-radius: 6px;
+    padding: 0.8rem;
+    max-height: 150px;
+    overflow-y: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 0.75rem;
+    color: #88ff88;
+    border: 1px solid rgba(0,255,0,0.2);
+  }
+  .log-entry { margin-bottom: 0.2rem; }
+  .log-entry.err { color: #ff6666; }
+  .log-entry.info { color: #66aaff; }
+  .log-entry.warn { color: #ffaa44; }
+  .users-list {
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .user-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    font-size: 0.8rem;
+  }
+  .user-row-name { font-weight: 600; display: flex; align-items: center; gap: 0.3rem; }
+  .user-row-actions { display: flex; gap: 0.3rem; }
+  .mini-btn {
+    padding: 0.2rem 0.5rem;
+    border: none; border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.65rem;
+    font-weight: 700;
+    transition: all 0.15s;
+  }
+  .mini-btn-ban { background: #8b0000; color: #fff; }
+  .mini-btn-ban:hover { background: var(--gd-red); }
+  .mini-btn-promote { background: #204020; color: var(--gd-green); border: 1px solid var(--gd-green); }
+  .mini-btn-promote:hover { background: rgba(57,255,20,0.2); }
+  .mini-btn-coins { background: #403000; color: var(--gd-yellow); border: 1px solid var(--gd-yellow); }
+  .mini-btn-coins:hover { background: rgba(255,215,0,0.2); }
+
+  /* ═══════════════════ SETTINGS ═══════════════════ */
+  #settingsScreen {
+    background: radial-gradient(ellipse at center, #0a0a1e 0%, var(--gd-darker) 60%);
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+    overflow-y: auto;
+  }
+  .settings-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--gd-blue);
+    text-shadow: 0 0 20px rgba(0,212,255,0.7);
+    margin-bottom: 2rem;
+    letter-spacing: 3px;
+  }
+  .settings-panel {
+    background: var(--gd-panel);
+    border-radius: 12px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 600px;
+    border: 1px solid rgba(0,212,255,0.2);
+  }
+  .settings-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .settings-label { font-size: 0.95rem; font-weight: 600; }
+  .settings-desc { font-size: 0.75rem; color: rgba(255,255,255,0.4); margin-top: 0.2rem; }
+  .toggle {
+    width: 50px; height: 26px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 13px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.3s;
+    border: none;
+    flex-shrink: 0;
+  }
+  .toggle.on { background: var(--gd-green); }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 20px; height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    top: 3px; left: 3px;
+    transition: left 0.3s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+  }
+  .toggle.on::after { left: 27px; }
+  .name-input {
+    padding: 0.5rem 0.8rem;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(0,212,255,0.3);
+    border-radius: 6px;
+    color: #fff;
+    font-family: 'Exo 2', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    width: 180px;
+  }
+  .name-input:focus { border-color: var(--gd-blue); }
+
+  /* ═══════════════════ TOAST NOTIFICATIONS ═══════════════════ */
+  #toastContainer {
+    position: fixed; top: 1rem; right: 1rem;
+    z-index: 9999;
+    display: flex; flex-direction: column; gap: 0.5rem;
+    pointer-events: none;
+  }
+  .toast {
+    padding: 0.8rem 1.2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
+    max-width: 280px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+  @keyframes toastIn { from { opacity: 0; transform: translateX(60px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateX(60px); } }
+  .toast-success { background: linear-gradient(135deg, #1a4a1a, #2a7a2a); border: 1px solid var(--gd-green); color: #fff; }
+  .toast-error { background: linear-gradient(135deg, #4a1a1a, #7a2a2a); border: 1px solid var(--gd-red); color: #fff; }
+  .toast-info { background: linear-gradient(135deg, #1a2a4a, #2a3a7a); border: 1px solid var(--gd-blue); color: #fff; }
+  .toast-gold { background: linear-gradient(135deg, #3a2a00, #6a4a00); border: 1px solid var(--gd-yellow); color: #ffd700; }
+
+  /* ═══════════════════ LOGIN SCREEN ═══════════════════ */
+  #loginScreen {
+    background: radial-gradient(ellipse at center, #0a0a1e 0%, var(--gd-darker) 70%);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .login-card {
+    background: var(--gd-panel);
+    border-radius: 16px;
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 400px;
+    border: 1px solid rgba(255,107,53,0.3);
+    box-shadow: 0 0 60px rgba(255,107,53,0.15);
+  }
+  .login-logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 900;
+    text-align: center;
+    color: var(--gd-orange);
+    text-shadow: 0 0 15px rgba(255,107,53,0.7);
+    margin-bottom: 1.8rem;
+    letter-spacing: 2px;
+  }
+  .login-input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,107,53,0.3);
+    border-radius: 8px;
+    color: #fff;
+    font-family: 'Exo 2', sans-serif;
+    font-size: 0.95rem;
+    outline: none;
+    margin-bottom: 1rem;
+    transition: border-color 0.2s;
+  }
+  .login-input:focus { border-color: var(--gd-orange); box-shadow: 0 0 10px rgba(255,107,53,0.3); }
+  .login-input::placeholder { color: rgba(255,255,255,0.3); }
+  .login-submit {
+    width: 100%;
+    padding: 0.9rem;
+    background: linear-gradient(135deg, var(--gd-orange), #ff4500);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 2px;
+    margin-bottom: 0.8rem;
+    transition: all 0.2s;
+  }
+  .login-submit:hover { box-shadow: 0 0 20px rgba(255,107,53,0.7); transform: scale(1.02); }
+  .login-alt {
+    text-align: center;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 0.5rem;
+  }
+  .login-alt a {
+    color: var(--gd-blue);
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .login-alt a:hover { text-decoration: underline; }
+  .login-guest {
+    width: 100%;
+    padding: 0.7rem;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    color: rgba(255,255,255,0.6);
+    font-family: 'Exo 2', sans-serif;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .login-guest:hover { background: rgba(255,255,255,0.12); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,107,53,0.4); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,107,53,0.7); }
+
+  /* Owner menu bottom of main menu */
+  .owner-access-btn {
+    position: fixed;
+    bottom: 1rem; right: 1rem;
+    padding: 0.5rem 1rem;
+    background: rgba(80,0,0,0.8);
+    border: 1px solid rgba(255,0,0,0.5);
+    border-radius: 6px;
+    color: #ff6666;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 1px;
+    z-index: 100;
+    display: none;
+    transition: all 0.2s;
+  }
+  .owner-access-btn:hover { background: rgba(150,0,0,0.8); box-shadow: 0 0 15px rgba(255,0,0,0.5); }
+  .online-badge {
+    position: fixed;
+    bottom: 1rem; left: 1rem;
+    padding: 0.4rem 0.8rem;
+    background: rgba(57,255,20,0.1);
+    border: 1px solid rgba(57,255,20,0.3);
+    border-radius: 20px;
+    color: var(--gd-green);
+    font-size: 0.7rem;
+    font-weight: 600;
+    z-index: 100;
+    display: none;
+  }
+  .online-dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    background: var(--gd-green);
+    border-radius: 50%;
+    margin-right: 0.4rem;
+    animation: pulse-dot 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* Floating particles */
+  .particle {
+    position: fixed;
+    pointer-events: none;
+    border-radius: 50%;
+    animation: particleFloat linear forwards;
+  }
+  @keyframes particleFloat {
+    0% { opacity: 1; transform: scale(1) translate(0, 0); }
+    100% { opacity: 0; transform: scale(0) translate(var(--dx), var(--dy)); }
+  }
+
+  /* Death animation */
+  @keyframes deathShake {
+    0%,100% { transform: translate(0,0) rotate(0); }
+    20% { transform: translate(-8px,4px) rotate(-5deg); }
+    40% { transform: translate(8px,-4px) rotate(5deg); }
+    60% { transform: translate(-6px,6px) rotate(-3deg); }
+    80% { transform: translate(6px,-6px) rotate(3deg); }
+  }
+  .screen-shake { animation: deathShake 0.4s ease; }
+
+  /* Achievement popup */
+  .achievement-popup {
+    position: fixed;
+    top: 5rem; left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: linear-gradient(135deg, #2a1a00, #4a3a00);
+    border: 2px solid var(--gd-yellow);
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    z-index: 9998;
+    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 0 30px rgba(255,215,0,0.4);
+    pointer-events: none;
+  }
+  .achievement-popup.show { transform: translateX(-50%) translateY(0); }
+  .achievement-icon { font-size: 2rem; }
+  .achievement-text .ach-label { font-size: 0.7rem; color: var(--gd-yellow); letter-spacing: 2px; text-transform: uppercase; }
+  .achievement-text .ach-name { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 0.95rem; }
+</style>
+</head>
+<body>
+
+<!-- ───────── LOADING ───────── -->
+<div id="loadingScreen" class="screen active">
+  <div class="loading-logo">⬛ GEOBLAST</div>
+  <div class="loading-bar-wrap">
+    <div class="loading-bar" id="loadingBar"></div>
+  </div>
+  <div class="loading-tip" id="loadingTip">Loading awesome levels...</div>
+</div>
+
+<!-- ───────── LOGIN ───────── -->
+<div id="loginScreen" class="screen">
+  <div class="login-card">
+    <div class="login-logo">⬛ GEOBLAST</div>
+    <input type="text" class="login-input" id="loginUsername" placeholder="Username" maxlength="20">
+    <input type="password" class="login-input" id="loginPassword" placeholder="Password">
+    <button class="login-submit" id="loginBtn">ENTER THE DASH</button>
+    <div class="login-alt">New player? <a onclick="showRegister()">Create Account</a></div>
+    <button class="login-guest" onclick="guestLogin()">▷ Play as Guest</button>
+  </div>
+</div>
+
+<!-- ───────── MAIN MENU ───────── -->
+<div id="mainMenu" class="screen">
+  <div class="menu-bg-stars"></div>
+  <div class="menu-particles" id="menuParticles"></div>
+  <div class="menu-title">⬛ GeoBlast</div>
+  <div class="menu-subtitle">Geometry Dash Replica</div>
+  <div class="menu-buttons">
+    <button class="menu-btn menu-btn-primary" onclick="showLevelSelect()">▶ PLAY</button>
+    <button class="menu-btn menu-btn-secondary" onclick="showScreen('cosmeticsScreen')">✦ COSMETICS</button>
+    <button class="menu-btn menu-btn-secondary" onclick="showScreen('leaderboardScreen'); loadLeaderboard()">🏆 LEADERBOARD</button>
+    <button class="menu-btn menu-btn-secondary" onclick="showScreen('profileScreen'); loadProfile()">👤 PROFILE</button>
+    <button class="menu-btn menu-btn-secondary" onclick="showScreen('settingsScreen')">⚙ SETTINGS</button>
+    <button class="menu-btn menu-btn-gold" onclick="showScreen('leaderboardScreen')">🌐 COMMUNITY</button>
+  </div>
+  <div class="menu-version">GEOBLAST v2.0 | Made with ❤️</div>
+</div>
+
+<!-- ───────── LEVEL SELECT ───────── -->
+<div id="levelSelect" class="screen">
+  <button class="back-btn" onclick="showScreen('mainMenu')">← BACK</button>
+  <div class="level-select-title">☆ SELECT LEVEL</div>
+  <div class="level-grid" id="levelGrid"></div>
+</div>
+
+<!-- ───────── GAME ───────── -->
+<div id="gameScreen" class="screen">
+  <canvas id="gameCanvas"></canvas>
+  <div class="progress-wrap">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+  <div class="progress-pct" id="progressPct">0%</div>
+  <div class="practice-badge" id="practiceBadge">● PRACTICE</div>
+  <div class="game-hud">
+    <div class="hud-left">
+      <div class="hud-level-name" id="hudLevelName">Stereo Madness</div>
+      <div class="hud-attempt" id="hudAttempt">Attempt #1</div>
+    </div>
+  </div>
+
+  <!-- DEATH OVERLAY -->
+  <div class="game-overlay" id="deathOverlay">
+    <div class="overlay-title death-title">💀 DIED!</div>
+    <div class="overlay-stats" id="deathStats">Best: 0% | Attempts: 1</div>
+    <div class="overlay-buttons">
+      <button class="ov-btn ov-btn-restart" onclick="restartLevel()">↺ RETRY</button>
+      <button class="ov-btn ov-btn-practice" onclick="startPractice()">● PRACTICE</button>
+      <button class="ov-btn ov-btn-menu" onclick="showLevelSelect()">≡ LEVELS</button>
+    </div>
+  </div>
+
+  <!-- WIN OVERLAY -->
+  <div class="game-overlay" id="winOverlay">
+    <div class="overlay-title win-title">🌟 COMPLETE!</div>
+    <div class="overlay-stats" id="winStats">Coins earned! Stars collected!</div>
+    <div class="overlay-buttons">
+      <button class="ov-btn ov-btn-next" onclick="nextLevel()" id="nextLevelBtn">→ NEXT LEVEL</button>
+      <button class="ov-btn ov-btn-restart" onclick="restartLevel()">↺ REPLAY</button>
+      <button class="ov-btn ov-btn-menu" onclick="showLevelSelect()">≡ LEVELS</button>
+    </div>
+  </div>
+
+  <!-- PAUSE OVERLAY -->
+  <div class="game-overlay" id="pauseOverlay">
+    <div class="overlay-title pause-title">⏸ PAUSED</div>
+    <div class="overlay-stats">Press ESC or tap to resume</div>
+    <div class="overlay-buttons">
+      <button class="ov-btn ov-btn-restart" onclick="resumeGame()">▶ RESUME</button>
+      <button class="ov-btn ov-btn-practice" onclick="restartLevel()">↺ RESTART</button>
+      <button class="ov-btn ov-btn-menu" onclick="showLevelSelect()">≡ QUIT</button>
+    </div>
+  </div>
+</div>
+
+<!-- ───────── COSMETICS ───────── -->
+<div id="cosmeticsScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('mainMenu')">← BACK</button>
+  <div class="cosmetics-title">✦ COSMETICS</div>
+  <div class="currency-display">
+    <span>🪙</span><span id="coinDisplay">0</span><span style="color:rgba(255,255,255,0.4); font-size:0.7rem">COINS</span>
+  </div>
+  <div class="cosmetics-grid">
+    <div class="cosmetics-panel">
+      <h3>🎨 PRIMARY COLOR</h3>
+      <div class="color-options" id="primaryColors"></div>
+    </div>
+    <div class="cosmetics-panel">
+      <h3>⚡ SECONDARY COLOR</h3>
+      <div class="color-options" id="secondaryColors"></div>
+    </div>
+    <div class="cosmetics-panel">
+      <h3>✨ TRAIL EFFECT</h3>
+      <div class="trail-options" id="trailOptions"></div>
+    </div>
+    <div class="cosmetics-panel">
+      <h3>🔷 PLAYER ICON</h3>
+      <div class="icon-options" id="iconOptions"></div>
+    </div>
+  </div>
+  <div class="player-preview-wrap">
+    <div style="font-family:'Orbitron',sans-serif;font-size:0.8rem;color:rgba(255,255,255,0.5);letter-spacing:2px;margin-bottom:0.5rem;">PREVIEW</div>
+    <canvas id="playerPreviewCanvas" width="300" height="100"></canvas>
+    <button class="menu-btn menu-btn-primary" onclick="saveCosmetics()" style="width:200px;margin-top:0.5rem;font-size:0.85rem;">💾 SAVE LOOKS</button>
+  </div>
+</div>
+
+<!-- ───────── LEADERBOARD ───────── -->
+<div id="leaderboardScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('mainMenu')">← BACK</button>
+  <div class="lb-title">🏆 LEADERBOARD</div>
+  <table class="lb-table">
+    <thead>
+      <tr>
+        <th>RANK</th>
+        <th>PLAYER</th>
+        <th>SCORE</th>
+        <th>STARS</th>
+        <th>LEVELS</th>
+      </tr>
+    </thead>
+    <tbody id="lbBody"></tbody>
+  </table>
+</div>
+
+<!-- ───────── PROFILE ───────── -->
+<div id="profileScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('mainMenu')">← BACK</button>
+  <div class="profile-card">
+    <div class="profile-header">
+      <div class="profile-avatar" id="profileAvatar">⬛</div>
+      <div class="profile-info">
+        <h2 id="profileName">GeoPlayer</h2>
+        <div class="profile-tag-display" id="profileTags"></div>
+        <div class="profile-join" id="profileJoin">Joined today</div>
+      </div>
+    </div>
+    <div class="stats-grid" id="statsGrid"></div>
+    <div style="font-family:'Orbitron',sans-serif;font-size:0.8rem;color:rgba(255,255,255,0.4);letter-spacing:2px;margin-bottom:0.8rem;">COMPLETED LEVELS</div>
+    <div id="completedLevelsList"></div>
+  </div>
+</div>
+
+<!-- ───────── SETTINGS ───────── -->
+<div id="settingsScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('mainMenu')">← BACK</button>
+  <div class="settings-title">⚙ SETTINGS</div>
+  <div class="settings-panel">
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">Player Name</div>
+        <div class="settings-desc">Shown on leaderboard & profile</div>
+      </div>
+      <input type="text" class="name-input" id="playerNameInput" maxlength="20">
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">Sound Effects</div>
+        <div class="settings-desc">Jump and hit sounds</div>
+      </div>
+      <button class="toggle on" id="toggleSfx" onclick="toggleSetting('sfx', this)"></button>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">Particles</div>
+        <div class="settings-desc">Player trail particles</div>
+      </div>
+      <button class="toggle on" id="toggleParticles" onclick="toggleSetting('particles', this)"></button>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">Show FPS</div>
+        <div class="settings-desc">Frames per second counter</div>
+      </div>
+      <button class="toggle" id="toggleFps" onclick="toggleSetting('fps', this)"></button>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">Screen Flash on Death</div>
+        <div class="settings-desc">Red flash when you die</div>
+      </div>
+      <button class="toggle on" id="toggleFlash" onclick="toggleSetting('flash', this)"></button>
+    </div>
+    <div style="margin-top:1.5rem; display:flex; gap:0.8rem; flex-wrap:wrap;">
+      <button class="menu-btn menu-btn-primary" onclick="saveSettings()" style="width:auto;padding:0.8rem 1.5rem;font-size:0.8rem;">💾 SAVE</button>
+      <button class="menu-btn menu-btn-secondary" onclick="resetProgress()" style="width:auto;padding:0.8rem 1.5rem;font-size:0.8rem;color:var(--gd-red);border-color:var(--gd-red);">🗑 RESET PROGRESS</button>
+    </div>
+  </div>
+</div>
+
+<!-- ───────── OWNER DASHBOARD ───────── -->
+<div id="ownerScreen" class="screen">
+  <button class="back-btn" onclick="showScreen('mainMenu')">← BACK</button>
+  <div class="owner-title">👑 OWNER DASHBOARD</div>
+  <div class="owner-subtitle">⚠ RESTRICTED ACCESS — OWNER ONLY ⚠</div>
+  <div class="owner-grid">
+
+    <!-- Server Stats -->
+    <div class="owner-panel">
+      <h3>📊 LIVE STATS</h3>
+      <div class="owner-stat"><span>Online Players</span><span id="ownerOnline">-</span></div>
+      <div class="owner-stat"><span>Total Players</span><span id="ownerTotal">-</span></div>
+      <div class="owner-stat"><span>Games Today</span><span id="ownerGames">-</span></div>
+      <div class="owner-stat"><span>Total Stars</span><span id="ownerStars">-</span></div>
+      <div class="owner-stat"><span>Total Coins</span><span id="ownerCoins">-</span></div>
+    </div>
+
+    <!-- Broadcast -->
+    <div class="owner-panel">
+      <h3>📣 BROADCAST</h3>
+      <textarea class="owner-input" id="broadcastMsg" rows="3" placeholder="Message to send to all players..." style="resize:none;"></textarea>
+      <button class="owner-btn owner-btn-gold" onclick="ownerBroadcast()">📣 SEND ANNOUNCEMENT</button>
+      <button class="owner-btn owner-btn-red" onclick="ownerAlert()">🚨 EMERGENCY ALERT</button>
+    </div>
+
+    <!-- User Management -->
+    <div class="owner-panel">
+      <h3>👤 USER COMMANDS</h3>
+      <input class="owner-input" id="targetUser" placeholder="Username or ID">
+      <button class="owner-btn owner-btn-gold" onclick="ownerGiveCoins()">🪙 GIVE 1000 COINS</button>
+      <button class="owner-btn owner-btn-purple" onclick="ownerSetTag()">🏷 SET TAG</button>
+      <button class="owner-btn owner-btn-blue" onclick="ownerUnlock()">🔓 UNLOCK ALL LEVELS</button>
+      <button class="owner-btn owner-btn-red" onclick="ownerBan()">🚫 BAN USER</button>
+    </div>
+
+    <!-- Level Control -->
+    <div class="owner-panel">
+      <h3>🎮 LEVEL CONTROL</h3>
+      <input class="owner-input" id="levelSpeedInput" type="number" placeholder="Game Speed (0.5 - 3.0)" step="0.1" min="0.5" max="3">
+      <button class="owner-btn owner-btn-blue" onclick="ownerSetSpeed()">⚡ SET GLOBAL SPEED</button>
+      <button class="owner-btn owner-btn-gold" onclick="ownerAddStars()">⭐ GIVE ALL 999 STARS</button>
+      <button class="owner-btn owner-btn-red" onclick="ownerResetAll()">💀 RESET ALL PROGRESS</button>
+    </div>
+
+    <!-- Tag Manager -->
+    <div class="owner-panel">
+      <h3>🏷 TAG MANAGER</h3>
+      <input class="owner-input" id="tagTargetUser" placeholder="Username">
+      <select class="owner-input" id="tagSelect" style="cursor:pointer;">
+        <option value="owner">👑 OWNER</option>
+        <option value="admin">🔥 ADMIN</option>
+        <option value="mod">🛡 MOD</option>
+        <option value="vip">⭐ VIP</option>
+        <option value="legend">💜 LEGEND</option>
+        <option value="bot">🤖 BOT</option>
+        <option value="">❌ REMOVE TAG</option>
+      </select>
+      <button class="owner-btn owner-btn-purple" onclick="ownerApplyTag()">✓ APPLY TAG</button>
+    </div>
+
+    <!-- Console Log -->
+    <div class="owner-panel">
+      <h3>💻 SYSTEM LOG</h3>
+      <div class="owner-log" id="ownerLog">
+        <div class="log-entry info">[SYSTEM] Owner dashboard initialized</div>
+        <div class="log-entry">[READY] Awaiting commands...</div>
+      </div>
+      <button class="owner-btn owner-btn-blue" style="margin-top:0.5rem;" onclick="clearOwnerLog()">🗑 CLEAR LOG</button>
+    </div>
+
+    <!-- Players Online List -->
+    <div class="owner-panel" style="grid-column: 1 / -1;">
+      <h3>🌐 PLAYERS ONLINE</h3>
+      <div class="users-list" id="onlineUsersList"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ───────── GLOBAL UI ───────── -->
+<button class="owner-access-btn" id="ownerAccessBtn" onclick="showScreen('ownerScreen'); loadOwnerDash()">👑 OWNER PANEL</button>
+<div class="online-badge" id="onlineBadge"><span class="online-dot"></span><span id="onlineCount">1</span> ONLINE</div>
+<div id="toastContainer"></div>
+<div class="achievement-popup" id="achievementPopup">
+  <div class="achievement-icon" id="achIcon">🏆</div>
+  <div class="achievement-text">
+    <div class="ach-label">ACHIEVEMENT UNLOCKED</div>
+    <div class="ach-name" id="achName">First Win!</div>
+  </div>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>
