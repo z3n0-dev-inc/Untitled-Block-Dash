@@ -1,0 +1,15 @@
+# Railway deployment config
+# This file tells Railway exactly how to run your app
+
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "node backend/server.js"
+healthcheckPath = "/api/stats/global"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[[services]]
+name = "geoblast"
